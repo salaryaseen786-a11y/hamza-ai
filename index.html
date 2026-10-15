@@ -36,15 +36,43 @@ form{display:flex;gap:8px;align-items:flex-end;background:#0d1a2a;border:1px sol
 <script>
 const $=id=>document.getElementById(id), chat=$('chat');let voiceReplies=true,listening=false;
 function add(text,who){$('welcome').style.display='none';$('quick').style.display='none';const d=document.createElement('div');d.className='msg '+who;const l=document.createElement('div');l.className='label';l.textContent=who==='user'?'YOU':'HAMZA AI';const t=document.createElement('div');t.textContent=text;d.append(l,t);chat.append(d);d.scrollIntoView({behavior:'smooth',block:'end'});return d}
-function reply(q){let s=q.toLowerCase(),a='';
-if(/what can you do|help me|capabilities/.test(s)) a="I can help draft messages, explain topics, plan tasks, brainstorm ideas, and guide you through coding and trading-chart analysis. This starter version uses simple offline rules; it is not yet connected to a full AI model.";
-else if(/plan my day|schedule|organize/.test(s)) a="Let's make a simple plan:\n1. Choose your 1–3 most important tasks.\n2. Do the hardest task first in a focused 25-minute session.\n3. Take a 5-minute break.\n4. Review what is left and adjust.\n\nTell me your tasks and available time and I'll help organize them.";
-else if(/trading|forex|gold|xauusd|chart/.test(s)) a="I can help explain indicators, review a chart screenshot you share, or write and troubleshoot TradingView Pine Script. This starter build does not read live prices or place trades. Test strategies on demo first; signals are not guarantees.";
-else if(/app|code|program|website/.test(s)) a="I can help you plan an app and generate code step by step. Since you're on Android, we can use browser-based tools and avoid needing a PC. Tell me what you want the app to do and I'll break it into small steps.";
-else if(/hello|hi |hey|salam|assalam/.test(s)) a="Hello! I'm HAMZA AI, your personal assistant starter. What would you like to work on?";
-else if(/remind|reminder/.test(s)) a="I can help you write a reminder, but this starter version cannot send notifications while closed. For real reminders, we can add Android calendar or notification integration later.";
-else a="I’ve received your message: “"+q+"”\n\nThis is the starter edition, so it does not yet have a connected general-purpose AI model. You can use the voice input and spoken replies now. To get intelligent answers to any question, the next step is connecting an AI API or a hosted AI service; free access and limits depend on the provider.";
-const node=add(a,'bot');if(voiceReplies&&'speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(a);u.rate=1; speechSynthesis.speak(u)}}
+
+async function reply(q) {
+  const node = add("Thinking...", "bot");
+  const answerBox = node.lastElementChild;
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: q })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "AI request failed. Try again."
+      );
+    }
+
+    const answer = data.answer || "No answer returned.";
+    answerBox.textContent = answer;
+
+    if (voiceReplies && "speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      const speech = new SpeechSynthesisUtterance(answer);
+      speech.rate = 1;
+      speechSynthesis.speak(speech);
+    }
+  } catch (error) {
+    answerBox.textContent =
+      "Connection error: " + error.message;
+  }
+}
+
 $('form').addEventListener('submit',e=>{e.preventDefault();let q=$('input').value.trim();if(!q)return;$('input').value='';add(q,'user');reply(q)});
 $('quick').addEventListener('click',e=>{let b=e.target.closest('button');if(b){let q=b.dataset.prompt;add(q,'user');reply(q)}});
 $('clear').onclick=()=>{chat.innerHTML='';$('welcome').style.display='';$('quick').style.display='grid';if('speechSynthesis'in window)speechSynthesis.cancel()};
