@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f"><meta name="description" content="HAMZA AI personal assistant">
+<link rel="manifest" href="manifest.json">
+<title>HAMZA AI</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101e30;--line:#24364d;--text:#edf5ff;--muted:#9cb0c9;--cyan:#54d8ff;--purple:#8c78ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142943 0%,var(--bg) 52%);font:16px system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh}
+.app{max-width:760px;margin:auto;min-height:100vh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;gap:12px;padding:18px 2px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#07111fee;backdrop-filter:blur(12px);z-index:2}
+.logo{height:46px;width:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(140deg,var(--cyan),var(--purple));color:#06101c;font-weight:900;font-size:20px;box-shadow:0 0 28px #54d8ff25}
+h1{font-size:18px;margin:0;letter-spacing:1.8px} .sub{font-size:12px;color:var(--muted);margin-top:3px}.status{margin-left:auto;color:#8ff0c1;font-size:12px}
+main{flex:1;padding:18px 0 12px}.welcome{text-align:center;padding:25px 8px 20px}.orb{width:84px;height:84px;border-radius:50%;margin:0 auto 16px;background:radial-gradient(circle at 35% 30%,#e5fbff,#54d8ff 25%,#7967ff 58%,#101e30 75%);box-shadow:0 0 45px #54d8ff40;animation:breathe 4s ease-in-out infinite}@keyframes breathe{50%{transform:scale(1.05);box-shadow:0 0 60px #8c78ff55}}.welcome h2{margin:0 0 8px;font-size:24px}.welcome p{color:var(--muted);max-width:440px;margin:auto;line-height:1.5}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 18px}.quick button{background:#102137;border:1px solid var(--line);border-radius:14px;padding:13px 12px;text-align:left;color:var(--text);font:inherit;font-size:13px;min-height:62px}.quick button span{display:block;color:var(--cyan);font-size:17px;margin-bottom:4px}
+#chat{display:flex;flex-direction:column;gap:12px;padding-bottom:12px}.msg{max-width:90%;padding:12px 14px;border-radius:16px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:linear-gradient(135deg,#235c7e,#5145a0);border-bottom-right-radius:5px}.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:5px}.label{font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:1px}
+.composer{position:sticky;bottom:0;background:linear-gradient(#07111f00,#07111f 18%);padding:12px 0 calc(10px + env(safe-area-inset-bottom));}
+form{display:flex;gap:8px;align-items:flex-end;background:#0d1a2a;border:1px solid #30445d;border-radius:19px;padding:7px}.input{flex:1;min-width:0;max-height:120px;resize:vertical;background:transparent;border:0;outline:none;color:var(--text);font:inherit;padding:10px 6px}.iconbtn,.send{border:0;border-radius:13px;width:43px;height:43px;flex:0 0 43px;background:#1a2c42;color:var(--text);font-size:19px}.send{background:linear-gradient(135deg,var(--cyan),#9a8bff);color:#06101c;font-weight:800}.iconbtn.listening{background:#b22d51;animation:breathe 1s infinite}.fine{font-size:11px;color:var(--muted);text-align:center;padding:7px 10px 0;line-height:1.4}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.tools button{background:transparent;border:1px solid var(--line);border-radius:99px;padding:7px 10px;color:var(--muted);font-size:12px}
+@media(min-width:600px){.app{padding-left:24px;padding-right:24px}.welcome{padding-top:40px}.quick{grid-template-columns:repeat(4,1fr)}}
+</style></head>
+<body><div class="app">
+<header><div class="logo">H</div><div><h1>HAMZA AI</h1><div class="sub">YOUR PERSONAL ASSISTANT</div></div><div class="status">● Ready</div></header>
+<main><section class="welcome" id="welcome"><div class="orb"></div><h2>How can I help you?</h2><p>Ask a question, use your voice, brainstorm an idea, or get help with your projects.</p></section>
+<div class="quick" id="quick">
+<button data-prompt="Help me plan my day"><span>◷</span>Plan my day</button>
+<button data-prompt="Explain how to analyze a trading chart safely"><span>↗</span>Trading help</button>
+<button data-prompt="Help me build an Android app"><span>⌘</span>Build an app</button>
+<button data-prompt="Give me ideas for learning a useful skill"><span>✦</span>Learn something</button>
+</div><div id="chat" aria-live="polite"></div>
+<div class="tools"><button id="clear">Clear chat</button><button id="voiceToggle">🔊 Voice replies: On</button><button id="help">What can you do?</button></div>
+</main>
+<div class="composer"><form id="form"><textarea id="input" class="input" rows="1" placeholder="Message HAMZA AI…" aria-label="Message"></textarea><button type="button" id="mic" class="iconbtn" aria-label="Speak">🎙</button><button class="send" aria-label="Send">➤</button></form><div class="fine" id="notice">Starter edition · Text and voice tools run on your device. Advanced AI answers need an AI service connection.</div></div>
+</div>
+<script>
+const $=id=>document.getElementById(id), chat=$('chat');let voiceReplies=true,listening=false;
+function add(text,who){$('welcome').style.display='none';$('quick').style.display='none';const d=document.createElement('div');d.className='msg '+who;const l=document.createElement('div');l.className='label';l.textContent=who==='user'?'YOU':'HAMZA AI';const t=document.createElement('div');t.textContent=text;d.append(l,t);chat.append(d);d.scrollIntoView({behavior:'smooth',block:'end'});return d}
+function reply(q){let s=q.toLowerCase(),a='';
+if(/what can you do|help me|capabilities/.test(s)) a="I can help draft messages, explain topics, plan tasks, brainstorm ideas, and guide you through coding and trading-chart analysis. This starter version uses simple offline rules; it is not yet connected to a full AI model.";
+else if(/plan my day|schedule|organize/.test(s)) a="Let's make a simple plan:\n1. Choose your 1–3 most important tasks.\n2. Do the hardest task first in a focused 25-minute session.\n3. Take a 5-minute break.\n4. Review what is left and adjust.\n\nTell me your tasks and available time and I'll help organize them.";
+else if(/trading|forex|gold|xauusd|chart/.test(s)) a="I can help explain indicators, review a chart screenshot you share, or write and troubleshoot TradingView Pine Script. This starter build does not read live prices or place trades. Test strategies on demo first; signals are not guarantees.";
+else if(/app|code|program|website/.test(s)) a="I can help you plan an app and generate code step by step. Since you're on Android, we can use browser-based tools and avoid needing a PC. Tell me what you want the app to do and I'll break it into small steps.";
+else if(/hello|hi |hey|salam|assalam/.test(s)) a="Hello! I'm HAMZA AI, your personal assistant starter. What would you like to work on?";
+else if(/remind|reminder/.test(s)) a="I can help you write a reminder, but this starter version cannot send notifications while closed. For real reminders, we can add Android calendar or notification integration later.";
+else a="I’ve received your message: “"+q+"”\n\nThis is the starter edition, so it does not yet have a connected general-purpose AI model. You can use the voice input and spoken replies now. To get intelligent answers to any question, the next step is connecting an AI API or a hosted AI service; free access and limits depend on the provider.";
+const node=add(a,'bot');if(voiceReplies&&'speechSynthesis'in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(a);u.rate=1; speechSynthesis.speak(u)}}
+$('form').addEventListener('submit',e=>{e.preventDefault();let q=$('input').value.trim();if(!q)return;$('input').value='';add(q,'user');reply(q)});
+$('quick').addEventListener('click',e=>{let b=e.target.closest('button');if(b){let q=b.dataset.prompt;add(q,'user');reply(q)}});
+$('clear').onclick=()=>{chat.innerHTML='';$('welcome').style.display='';$('quick').style.display='grid';if('speechSynthesis'in window)speechSynthesis.cancel()};
+$('voiceToggle').onclick=()=>{voiceReplies=!voiceReplies;$('voiceToggle').textContent='🔊 Voice replies: '+(voiceReplies?'On':'Off');if(!voiceReplies&&'speechSynthesis'in window)speechSynthesis.cancel()};
+$('help').onclick=()=>{add('What can you do?','user');reply('What can you do?')};
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SpeechRecognition){$('mic').title='Speech recognition may not be supported in this browser';$('notice').textContent='Voice typing depends on browser support. Try Chrome on Android. Spoken replies use your device speech engine.'}
+$('mic').onclick=()=>{if(!SpeechRecognition){$('input').placeholder='Voice typing unavailable here — type your message';return}if(listening)return;const rec=new SpeechRecognition();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=1;listening=true;$('mic').classList.add('listening');$('mic').textContent='⏺';rec.onresult=e=>{$('input').value=($('input').value+' '+e.results[0][0].transcript).trim()};rec.onerror=()=>{};rec.onend=()=>{listening=false;$('mic').classList.remove('listening');$('mic').textContent='🎙'};rec.start()};
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script></body></html>

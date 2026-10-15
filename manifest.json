@@ -1,0 +1,9 @@
+{
+  "name": "HAMZA AI Personal Assistant",
+  "short_name": "HAMZA AI",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "description": "A phone-friendly personal AI assistant starter."
+}
