@@ -53,7 +53,19 @@ module.exports = async function handler(req, res) {
           })
         });
 
-        data = await response.json();
+        const raw = await response.text();
+
+let data;
+
+try {
+  data = JSON.parse(raw);
+} catch (error) {
+  console.error("Unexpected server response:", raw);
+
+  throw new Error(
+    "The server returned an invalid response. Check your Vercel deployment."
+  );
+}
       } catch (error) {
         // Retry temporary network or response-reading errors.
         if (attempt >= delays.length) {
