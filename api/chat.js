@@ -1,33 +1,46 @@
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
-  }
-
-  const message = req.body?.message;
-
-  if (typeof message !== "string" ||
-      !message.trim() ||
-      message.length > 4000) {
-    return res.status(400).json({
-      error: "Enter a message under 4000 characters."
+    return res.status(405).json({
+      error: "Method not allowed"
     });
   }
 
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is missing from Vercel Environment Variables."
+      });
+    }
+
+    const message =
+      typeof req.body?.message === "string"
+        ? req.body.message.trim()
+        : "";
+
+    if (!message) {
+      return res.status(400).json({
+        error: "Please enter a message."
+      });
+    }
+
     const response = await fetch(
-      models/gemini-3.5-flash-lite:generateContent
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+        encodeURIComponent(apiKey),
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": process.env.GEMINI_API_KEY
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [{ text: message.trim() }]
-          }]
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: message }]
+            }
+          ]
         })
       }
     );
@@ -35,20 +48,35 @@ module.exports = async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Gemini error:", response.status);
+      console.error("Gemini API error:", data);
+
       return res.status(502).json({
-        error: "Gemini request failed. Check your API configuration."
+        error:
+          data.error?.message ||
+          "Gemini could not process the request."
       });
     }
 
-    const answer = data.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || "")
-      .join("") || "No answer returned.";
+    const answer =
+      data.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("")
+        .trim();
 
-    return res.status(200).json({ answer });
-  } catch {
+    if (!answer) {
+      return res.status(502).json({
+        error: "Gemini returned no text. Please try again."
+      });
+    }
+
+    return res.status(200).json({
+      reply: answer
+    });
+  } catch (error) {
+    console.error("Chat API error:", error);
+
     return res.status(500).json({
-      error: "Could not connect to Gemini."
+      error: "The server could not complete the AI request."
     });
   }
 };
