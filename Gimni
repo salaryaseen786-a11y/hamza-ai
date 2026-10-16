@@ -1,0 +1,133 @@
+
+module.exports = async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed"
+    });
+  }
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is missing from Vercel Environment Variables."
+      });
+    }
+
+    const message =
+      typeof req.body?.message === "string"
+        ? req.body.message.trim()
+        : "";
+
+    if (!message) {
+      return res.status(400).json({
+        error: "Please enter a message."
+      });
+    }
+
+    const url =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" +
+      encodeURIComponent(apiKey);
+
+    let response;
+    let data;
+
+    // Retry temporary Gemini errors up to 3 times.
+    const delays = [1000, 2000, 4000];
+
+    for (let attempt = 0; ; attempt++) {
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: message }]
+              }
+            ]
+          })
+        });
+
+        data = await response.json();
+      } catch (error) {
+        // Retry temporary network or response-reading errors.
+        if (attempt >= delays.length) {
+          throw error;
+        }
+
+        await new Promise(resolve =>
+          setTimeout(resolve, delays[attempt])
+        );
+
+        continue;
+      }
+
+      const retryable =
+        [429, 500, 502, 503, 504].includes(response.status);
+
+      if (!retryable || attempt >= delays.length) {
+        break;
+      }
+
+      console.warn(
+        `Gemini returned ${response.status}. Retrying (${attempt + 1}/3).`
+      );
+
+      await new Promise(resolve =>
+        setTimeout(resolve, delays[attempt])
+      );
+    }
+
+    if (!response.ok) {
+      console.error("Gemini API error:", {
+        status: response.status,
+        message: data?.error?.message
+      });
+
+      if ([429, 500, 502, 503, 504].includes(response.status)) {
+        return res.status(503).json({
+          error:
+            "Gemini is temporarily busy. Please wait a few seconds and try again."
+        });
+      }
+
+      return res.status(502).json({
+        error:
+          data?.error?.message ||
+          "Gemini could not process the request."
+      });
+    }
+
+    const answer =
+      data.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("")
+        .trim();
+
+    if (!answer) {
+      console.error(
+        "Gemini returned no text:",
+        data.promptFeedback || "No additional details"
+      );
+
+      return res.status(502).json({
+        error: "Gemini returned no text. Please try again."
+      });
+    }
+
+    return res.status(200).json({
+      reply: answer
+    });
+  } catch (error) {
+    console.error("Chat API error:", error.message);
+
+    return res.status(500).json({
+      error: "The server could not complete the AI request. Please try again."
+    });
+  }
+};
